@@ -2,13 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
     <style>
         body { margin:0; overflow:hidden; background-color: #111;}
         canvas { display: block;}
+        #menu-overlay{
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 20, 20, 0.85);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 10;
+        }
+        .menu-box{
+            background:#222; padding:30px; border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); text-align: center; color:white;
+        }
+        input, select, button{
+            display:block; width:240px; margin:15px auto;
+            padding: 10px; border-radius: 4px; border:none; font-size:16px;
+        }
+        input, select{background:#333; color:white;}
+        button {background: #00ff00; color:#111; font-weight: bold; cursor:pointer;}
+        button:hover{background: #00cc00;}
+        
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .admin-popup {
+            background: rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+            font-family: 'Ubuntu', sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid rgba(0, 0, 0, 0.305);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(-20px);
+            max-height: 100px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .admin-popup.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .admin-popup.fade {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .admin-popup.collapse {
+            max-height: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            border-top-width: 0 !important;
+            border-bottom-width: 0 !important;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.0/pixi.min.js"></script>
 </head>
 <body>
+    <div id="menu-overlay">
+        <div class="menu-box">
+            <h2>Rearras.dev</h2>
+            <input type ="text" id="username-input" placeholder="..." maxlength="25" value="">
+            <select id ="server-select">
+                <option value="3000">server 1 (Port 3000)</option>
+                <option value="3001">server 2 (Port 3001)</option>
+                <option value="3002">server 3 (Port 3002)</option>
+            </select>
+
+            <button id="play-button">Play</button>
+        </div>
+    </div>
+
+    <div id="chat-wrapper" style="position: absolute; bottom: 20px; left: 20px; z-index: 5; pointer-events: none; font-family: 'Ubuntu', sans-serif;">
+        <div id="chat-area" style="width: 400px; height: 200px; overflow-y: hidden; display: flex; flex-direction: column; justify-content: flex-end; color: white; text-shadow: 1px 1px 2px black; font-size: 14px; margin-bottom: 10px; font-weight: bold;"></div>
+        <input type="text" id="chat-input" placeholder="Press Enter to chat..." maxlength="60" style="width: 380px; background: rgba(0,0,0,0.5); border: 2px solid transparent; color: white; padding: 8px; border-radius: 4px; display: block; margin: 0; pointer-events: auto; visibility: hidden; outline: none;">
+    </div>
+    <div id="notification-container"></div>
     <canvas id="game"></canvas>
     <script src="/client.js"></script>
 </body>

@@ -7,6 +7,8 @@ export class Entity {
         this.radius = radius;
         this.vx = 0;
         this.vy = 0;
+        this.score = 0;
+        this.team = id;
     }
 
     //basic physics loop
@@ -24,6 +26,9 @@ export class Entity {
         dataView.setFloat32(offset + 2, this.x);  
         dataView.setFloat32(offset + 6, this.y);  
         dataView.setFloat32(offset + 10, this.vx); 
-        return offset + 14;
+        dataView.setFloat32(offset+14, this.vy);
+        dataView.setFloat64(offset + 18, this.score);
+        dataView.setUint16(offset+26, this.team);
+        return offset + 28;
     }
 }

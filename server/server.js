@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {Player} from './entity/player.js';
+import { handleAdminCommand } from './commands.js';
 
 class gameWorld{
     //initialize the map and entity ids
@@ -21,7 +22,7 @@ class gameWorld{
 
     //creating arrayBuffer to send data to clients
     createSnapshotBuffer() {
-        const entitySize = 14;
+        const entitySize = 28;
         const bufferSize = 2 + (this.entities.size *entitySize);
         const buffer = new ArrayBuffer(bufferSize);
         const view = new DataView(buffer);
@@ -84,16 +85,84 @@ wss.on('connection', (ws) => {
     initView.setUint16(1, newPlayerId);
     ws.send(initBuffer);
 
+    world.entities.forEach((existingEntity) => {
+        if (existingEntity.type === 'player' && existingEntity.name) {
+            const encoder = new TextEncoder();
+            const nameBytes = encoder.encode(existingEntity.name);
+            const syncPacket = new Uint8Array(1 + 2 + nameBytes.length);
+            syncPacket[0] = 4;
+            const syncView = new DataView(syncPacket.buffer);
+            syncView.setUint16(1, existingEntity.id);
+            syncPacket.set(nameBytes, 3);
+            ws.send(syncPacket.buffer);
+        }
+    });
+
+    //registers all player inputs
     ws.on('message', (message) => {
         const view = new DataView(message);
         const command = view.getUint8(0);
+        //gets wasd input (command 1)
         if(command === 1){
             ws.player.inputs.w = view.getUint8(1) === 1;
             ws.player.inputs.a = view.getUint8(2) === 1;
             ws.player.inputs.s = view.getUint8(3) === 1;
             ws.player.inputs.d = view.getUint8(4) === 1;
         }
+        //Grabs username from player start menu (command 2)
+        if(command===2){
+            const decoder = new TextDecoder('utf-8');
+            const nameString = decoder.decode(new Uint8Array(message.slice(1)));
+            ws.player.name = nameString.trim() || "...";
+
+            const encoder = new TextEncoder();
+            const nameBytes = encoder.encode(ws.player.name);
+            
+            const namePacket = new Uint8Array(1 + 2 + nameBytes.length);
+            namePacket[0] = 4;
+            
+            const view = new DataView(namePacket.buffer);
+            view.setUint16(1, ws.player.id);
+            namePacket.set(nameBytes, 3); 
+            
+            wss.clients.forEach((client) => {
+                if (client.readyState === 1) {
+                    client.send(namePacket.buffer);
+                }
+            });
+        }
+
+        if(command===3){
+            const decoder = new TextDecoder('utf-8');
+            const messageString = decoder.decode(new Uint8Array(message.slice(1))).trim();
+
+            //handles commands
+            if (messageString.startsWith('/')) {
+                const commandHandled = handleAdminCommand(messageString, ws, world, wss);
+                if (commandHandled) {
+                    return;
+                }
+            }
+
+            if(messageString.length>0&&messageString.length<=60){
+                const senderName = ws.player.name || `Player ${ws.player.id}`;
+
+                const encoder = new TextEncoder();
+                const encodedText = encoder.encode(`${senderName}: ${messageString}`);
+
+                const chatPacket = new Uint8Array(1+ encodedText.length);
+                chatPacket[0] = 3;
+                chatPacket.set(encodedText, 1);
+
+                wss.clients.forEach((client) =>{
+                    if(client.readyState===1){
+                        client.send(chatPacket.buffer);
+                    }
+                })
+            }
+        }
     });
+
 
     //deletes players with closed websockets
     ws.on('close', () => {
