@@ -12,7 +12,6 @@ if (event.code == 'KeyS') vy = 0;
 if (event.code == 'KeyW') vy = 0;
 })
 
-/*
 addEventListner("keydown", function(event){
 if (event.code == 'ArrowLeft') vxr = 5;
 if (event.code == 'ArrowRight') vxl = -5;
